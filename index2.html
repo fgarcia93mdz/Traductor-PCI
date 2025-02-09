@@ -1,4 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Audio</title>
+</head>
+<body>
+    <h2>Prueba de Captura de Audio</h2>
+    <p>Si ves la onda de sonido moverse, el audio está funcionando.</p>
+    <canvas id="oscilloscope" width="400" height="100" style="border:1px solid black;"></canvas>
+    <script>
+        async function getAudioDevice() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const audioInput = devices.find(device => device.label.includes("CABLE Output"));
+            return audioInput ? audioInput.deviceId : null;
+        }
 
+        async function startAudioTest() {
+            const deviceId = await getAudioDevice();
+            if (!deviceId) {
+                console.error("No se encontró el dispositivo de audio CABLE Output.");
+                alert("No se encontró el dispositivo de audio CABLE Output.");
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: { deviceId: deviceId },
+                    video: false
+                });
+
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+
+                const canvas = document.getElementById("oscilloscope");
+                const ctx = canvas.getContext("2d");
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                function draw() {
+                    requestAnimationFrame(draw);
+                    analyser.getByteTimeDomainData(dataArray);
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = "black";
+                    ctx.beginPath();
+
+                    let sliceWidth = canvas.width / bufferLength;
+                    let x = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        let v = dataArray[i] / 128.0;
+                        let y = v * canvas.height / 2;
+                        if (i === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                        x += sliceWidth;
+                    }
+                    ctx.lineTo(canvas.width, canvas.height / 2);
+                    ctx.stroke();
+                }
+
+                draw();
+            } catch (error) {
+                console.error("Error al capturar audio:", error);
+                alert("Error al capturar audio: " + error.message);
+            }
+        }
+
+        startAudioTest();
+    </script>
+</body>
+</html>
 
 <!DOCTYPE html>
 <html lang="es">
