@@ -6,10 +6,9 @@
     <title>Traducción de Voz</title>
     <style>
         body {
-            background-color: rgb(0, 255, 0);
-            color: rgb(255, 221, 0);
+            background-color: rgb(255, 255, 255);
+            color: black;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
@@ -17,65 +16,50 @@
             text-align: center;
             font-size: 1.5em;
             font-family: Arial, sans-serif;
-            font-weight: bold;
         }
         #translated-text {
-            max-width: 80%;
-            border: 2px solid black;
-            padding: 10px;
-            margin-top: 20px;
+            max-width: 50%;
         }
         #start-btn {
             margin-top: 20px;
             padding: 10px 20px;
             font-size: 1em;
             cursor: pointer;
-            font-weight: bold;
-            background: black;
-            color: yellow;
-            border: none;
-            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-    <button id="start-btn">Empezar</button>
-    <p id="translated-text">Aquí aparecerá la traducción...</p>
+    <div>
+        <button id="start-btn">Empezar</button>
+        <p id="translated-text"></p>
+    </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/annyang/2.6.1/annyang.min.js"></script>
     <script>
         const startBtn = document.getElementById('start-btn');
         const translatedTextElem = document.getElementById('translated-text');
         const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbylA5xEjSY8OR9zaU3rD0xC_AehY4Fp8un_6nLF5rBy_iwKzjIRBzyUSYpqERxyAurU/exec';
 
-        // Verifica si el navegador soporta reconocimiento de voz
-        if (!('webkitSpeechRecognition' in window)) {
-            alert('Tu navegador no soporta reconocimiento de voz.');
-        } else {
-            const recognition = new webkitSpeechRecognition();
-            recognition.lang = 'es-ES';
-            recognition.continuous = false;
-            recognition.interimResults = false;
+        if (annyang) {
+            annyang.setLanguage('es-ES');
+            annyang.addCallback('result', function(phrases) {
+                const recognizedText = phrases[0];
 
-            recognition.onresult = function(event) {
-                const recognizedText = event.results[0][0].transcript;
-                translatedTextElem.innerText = 'Reconocido: ' + recognizedText;
-
-                // Traducción con Google Apps Script
+                // Traducción usando Google Apps Script
                 fetch(`${appsScriptUrl}?text=${encodeURIComponent(recognizedText)}&source=es&target=pt`)
                     .then(response => response.text())
                     .then(translatedText => {
-                        translatedTextElem.innerText = 'Traducción: ' + translatedText;
+                        translatedTextElem.innerText = translatedText;
                     })
                     .catch(error => console.error('Error en la traducción:', error));
-            };
-
-            recognition.onerror = function(event) {
-                console.error('Error en el reconocimiento:', event.error);
-            };
+            });
 
             startBtn.addEventListener('click', () => {
-                recognition.start();
+                annyang.start();
+                startBtn.disabled = true;
             });
+        } else {
+            alert('Reconocimiento de voz no es compatible con este navegador.');
         }
     </script>
 </body>
