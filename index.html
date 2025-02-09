@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -41,7 +40,7 @@
 <body>
     <div>
         <button id="start-btn">Empezar</button>
-        <p id="translated-text"></p>
+        <div id="translated-text"></div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/annyang/2.6.1/annyang.min.js"></script>
@@ -49,6 +48,7 @@
         const startBtn = document.getElementById('start-btn');
         const translatedTextElem = document.getElementById('translated-text');
         const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbylA5xEjSY8OR9zaU3rD0xC_AehY4Fp8un_6nLF5rBy_iwKzjIRBzyUSYpqERxyAurU/exec';
+        let paragraphs = [];
 
         if (annyang) {
             annyang.setLanguage('es-ES');
@@ -59,7 +59,11 @@
                 fetch(`${appsScriptUrl}?text=${encodeURIComponent(recognizedText)}&source=es&target=pt`)
                     .then(response => response.text())
                     .then(translatedText => {
-                        translatedTextElem.innerText = translatedText;
+                        if (paragraphs.length >= 3) {
+                            paragraphs.shift(); // Elimina el párrafo más antiguo
+                        }
+                        paragraphs.push(translatedText); // Añade el nuevo párrafo
+                        translatedTextElem.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
                     })
                     .catch(error => console.error('Error en la traducción:', error));
             });
@@ -73,5 +77,4 @@
         }
     </script>
 </body>
-
 </html>
