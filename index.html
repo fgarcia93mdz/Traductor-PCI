@@ -3,71 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subtítulos en Tiempo Real</title>
-    <style>
-        body {
-            background-color: transparent;
-            font-family: Arial, sans-serif;
-            color: white;
-            font-size: 32px;
-            text-align: center;
-            padding: 20px;
-        }
-        #translatedText {
-            font-weight: bold;
-        }
-    </style>
+    <title>Prueba de Captura de Audio</title>
 </head>
 <body>
-    <p id="translatedText">Esperando audio...</p>
-
+    <h2>Prueba de Captura de Audio</h2>
+    <p>Si ves la onda de sonido moverse, el audio está funcionando.</p>
+    <canvas id="oscilloscope" width="400" height="100" style="border:1px solid black;"></canvas>
     <script>
-        async function translateText(text) {
-            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=es|pt`;
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                return data.responseData.translatedText;
-            } catch (error) {
-                console.error("Error en la traducción:", error);
-                return "Error en la traducción";
-            }
+        async function getAudioDevice() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const audioInput = devices.find(device => device.kind === "audioinput" && device.label.includes("CABLE Output"));
+            return audioInput ? audioInput.deviceId : null;
         }
 
-        async function startAudioCapture() {
+        async function startAudioTest() {
+            const deviceId = await getAudioDevice();
+            if (!deviceId) {
+                console.error("No se encontró el dispositivo de entrada CABLE Output.");
+                alert("No se encontró el dispositivo de entrada CABLE Output.");
+                return;
+            }
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: { deviceId: "default" }, // Captura de audio de OBS a través de Virtual Cable
+                    audio: { deviceId: deviceId },
                     video: false
                 });
 
-                const audioContext = new AudioContext();
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const analyser = audioContext.createAnalyser();
                 const source = audioContext.createMediaStreamSource(stream);
-                const recognizer = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                recognizer.lang = "es-ES"; 
-                recognizer.interimResults = false;
-                recognizer.continuous = true;
+                source.connect(analyser);
 
-                recognizer.onresult = async (event) => {
-                    const transcript = event.results[event.results.length - 1][0].transcript;
-                    console.log("Texto detectado:", transcript);
-                    document.getElementById("translatedText").textContent = "Traduciendo...";
-                    
-                    const translatedText = await translateText(transcript);
-                    document.getElementById("translatedText").textContent = translatedText;
-                };
+                const canvas = document.getElementById("oscilloscope");
+                const ctx = canvas.getContext("2d");
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
 
-                recognizer.onerror = (event) => {
-                    console.error("Error de reconocimiento de voz:", event.error);
-                };
+                function draw() {
+                    requestAnimationFrame(draw);
+                    analyser.getByteTimeDomainData(dataArray);
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = "black";
+                    ctx.beginPath();
 
-                recognizer.start();
+                    let sliceWidth = canvas.width / bufferLength;
+                    let x = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        let v = dataArray[i] / 128.0;
+                        let y = v * canvas.height / 2;
+                        if (i === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                        x += sliceWidth;
+                    }
+                    ctx.lineTo(canvas.width, canvas.height / 2);
+                    ctx.stroke();
+                }
+
+                draw();
             } catch (error) {
                 console.error("Error al capturar audio:", error);
+                alert("Error al capturar audio: " + error.message);
             }
         }
 
-        startAudioCapture();
+        startAudioTest();
     </script>
 </body>
 </html>
