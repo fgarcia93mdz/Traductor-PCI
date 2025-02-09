@@ -23,8 +23,10 @@
         #translated-text {
             width: 80%;
             padding: 10px;
+            border: 2px solid black;
             margin-top: 20px;
             font-size: 1.2em;
+            white-space: pre-line; /* Permite saltos de línea */
         }
 
         #start-btn {
@@ -49,7 +51,7 @@
         const startBtn = document.getElementById('start-btn');
         const translatedTextElem = document.getElementById('translated-text');
         const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbylA5xEjSY8OR9zaU3rD0xC_AehY4Fp8un_6nLF5rBy_iwKzjIRBzyUSYpqERxyAurU/exec';
-
+        
         if (!('webkitSpeechRecognition' in window)) {
             alert('Tu navegador no soporta reconocimiento de voz.');
         } else {
@@ -57,6 +59,8 @@
             recognition.lang = 'es-ES';
             recognition.continuous = true;
             recognition.interimResults = true;
+
+            let translatedLines = [];
 
             recognition.onresult = async function(event) {
                 let interimTranscript = '';
@@ -70,24 +74,32 @@
                     }
                 }
 
-                translatedTextElem.innerText = 'Procesando...';
+                if (interimTranscript) {
+                    translatedTextElem.innerText = interimTranscript;
+                }
 
-                // Si hay un texto final, lo enviamos a traducir
                 if (finalTranscript.trim()) {
                     try {
                         const response = await fetch(`${appsScriptUrl}?text=${encodeURIComponent(finalTranscript)}&source=es&target=pt`);
                         const translatedText = await response.text();
-                        translatedTextElem.innerText = translatedText;
+                        
+                        translatedLines.push(translatedText); // Agrega la nueva línea
+                        if (translatedLines.length > 2) {
+                            translatedLines.shift(); // Mantiene solo las últimas 2 líneas
+                        }
+                        translatedTextElem.innerText = translatedLines.join('\n');
                     } catch (error) {
                         console.error('Error en la traducción:', error);
                     }
-                } else {
-                    translatedTextElem.innerText = interimTranscript;
                 }
             };
 
             recognition.onerror = function(event) {
                 console.error('Error en el reconocimiento:', event.error);
+            };
+
+            recognition.onend = function() {
+                recognition.start(); // Reinicia automáticamente para evitar cortes
             };
 
             startBtn.addEventListener('click', () => {
