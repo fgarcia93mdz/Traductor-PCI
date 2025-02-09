@@ -23,9 +23,10 @@
         #translated-text {
             width: 80%;
             padding: 10px;
+            border: 2px solid black;
             margin-top: 20px;
             font-size: 1.2em;
-            white-space: pre-line; /* Permite saltos de línea */
+            min-height: 50px;
         }
 
         #start-btn {
@@ -50,16 +51,17 @@
         const startBtn = document.getElementById('start-btn');
         const translatedTextElem = document.getElementById('translated-text');
         const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbylA5xEjSY8OR9zaU3rD0xC_AehY4Fp8un_6nLF5rBy_iwKzjIRBzyUSYpqERxyAurU/exec';
-        
+
         if (!('webkitSpeechRecognition' in window)) {
             alert('Tu navegador no soporta reconocimiento de voz.');
         } else {
             const recognition = new webkitSpeechRecognition();
             recognition.lang = 'es-ES';
             recognition.continuous = true;
-            recognition.interimResults = true;
+            recognition.interimResults = true; // Ahora traduce en tiempo real
 
-            let translatedLines = [];
+            let translatedLines = []; // Historial de traducciones (máximo 2 líneas)
+            let lastTranslation = ""; // Evitar traducciones repetidas
 
             recognition.onresult = async function(event) {
                 let interimTranscript = '';
@@ -73,19 +75,23 @@
                     }
                 }
 
-                if (interimTranscript) {
-                    translatedTextElem.innerText = interimTranscript;
+                // Traducción en tiempo real con resultados intermedios
+                if (interimTranscript.trim()) {
+                    translatedTextElem.innerText = 'Procesando... ' + interimTranscript;
                 }
 
-                if (finalTranscript.trim()) {
+                // Solo traduce cuando hay un resultado final nuevo
+                if (finalTranscript.trim() && finalTranscript !== lastTranslation) {
+                    lastTranslation = finalTranscript;
                     try {
                         const response = await fetch(`${appsScriptUrl}?text=${encodeURIComponent(finalTranscript)}&source=es&target=pt`);
                         const translatedText = await response.text();
-                        
-                        translatedLines.push(translatedText); // Agrega la nueva línea
+
+                        translatedLines.push(translatedText);
                         if (translatedLines.length > 2) {
-                            translatedLines.shift(); // Mantiene solo las últimas 2 líneas
+                            translatedLines.shift();
                         }
+
                         translatedTextElem.innerText = translatedLines.join('\n');
                     } catch (error) {
                         console.error('Error en la traducción:', error);
