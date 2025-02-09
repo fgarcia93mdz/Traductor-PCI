@@ -7,8 +7,8 @@
     <title>Traducción en Tiempo Real</title>
     <style>
         body {
-            background-color: rgb(255, 255, 255);
-            color: rgb(0, 0, 0);
+            background-color: white;
+            color: black;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -57,61 +57,24 @@
             const recognition = new webkitSpeechRecognition();
             recognition.lang = 'es-ES';
             recognition.continuous = true;
-            recognition.interimResults = true; // Ahora traduce en tiempo real
+            recognition.interimResults = true;
 
-            let translatedLines = []; // Historial de traducciones (máximo 2 líneas)
-            let lastTranslation = ""; // Evitar traducciones repetidas
+            let lastFinalText = "";
 
             recognition.onresult = async function(event) {
-                let interimTranscript = '';
-                let finalTranscript = '';
+                let interimTranscript = "";
+                let finalTranscript = "";
 
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript + ' ';
+                        finalTranscript += event.results[i][0].transcript + " ";
                     } else {
-                        interimTranscript += event.results[i][0].transcript + ' ';
+                        interimTranscript += event.results[i][0].transcript + " ";
                     }
                 }
 
-                // Traducción en tiempo real con resultados intermedios
-                if (interimTranscript.trim()) {
-                    translatedTextElem.innerText = 'Procesando... ' + interimTranscript;
-                }
+                // Muestra el texto en español mientras se detecta
+                translatedTextElem.innerText = interimTranscript ? `🗣 ${interimTranscript}` : "Procesando...";
 
-                // Solo traduce cuando hay un resultado final nuevo
-                if (finalTranscript.trim() && finalTranscript !== lastTranslation) {
-                    lastTranslation = finalTranscript;
-                    try {
-                        const response = await fetch(`${appsScriptUrl}?text=${encodeURIComponent(finalTranscript)}&source=es&target=pt`);
-                        const translatedText = await response.text();
-
-                        translatedLines.push(translatedText);
-                        if (translatedLines.length > 2) {
-                            translatedLines.shift();
-                        }
-
-                        translatedTextElem.innerText = translatedLines.join('\n');
-                    } catch (error) {
-                        console.error('Error en la traducción:', error);
-                    }
-                }
-            };
-
-            recognition.onerror = function(event) {
-                console.error('Error en el reconocimiento:', event.error);
-            };
-
-            recognition.onend = function() {
-                recognition.start(); // Reinicia automáticamente para evitar cortes
-            };
-
-            startBtn.addEventListener('click', () => {
-                recognition.start();
-                startBtn.disabled = true;
-            });
-        }
-    </script>
-</body>
-
-</html>
+                // Traduce solo cuando hay un nuevo resultado final
+                if (finalTranscript.trim() && finalTranscript !== lastFin
