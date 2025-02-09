@@ -22,6 +22,12 @@
     <p id="translatedText">Esperando audio...</p>
 
     <script>
+        async function getAudioDevice() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const audioInput = devices.find(device => device.label.includes("CABLE Output"));
+            return audioInput ? audioInput.deviceId : null;
+        }
+
         async function translateText(text) {
             const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=es|pt`;
             try {
@@ -35,9 +41,16 @@
         }
 
         async function startAudioCapture() {
+            const deviceId = await getAudioDevice();
+            if (!deviceId) {
+                console.error("No se encontró el dispositivo de audio CABLE Output.");
+                document.getElementById("translatedText").textContent = "Error: No se encontró el audio.";
+                return;
+            }
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: { deviceId: "default" }, // Captura de audio de OBS a través de Virtual Cable
+                    audio: { deviceId: deviceId },
                     video: false
                 });
 
