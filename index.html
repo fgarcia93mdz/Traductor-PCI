@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,12 +18,13 @@
             font-size: 1.5em;
             font-family: Arial, sans-serif;
         }
+
         #translated-text {
-            max-width: 50%;
             max-width: 80%;
             border: 1px solid black;
             padding: 10px;
         }
+
         #start-btn {
             margin-top: 20px;
             padding: 10px 20px;
@@ -35,6 +37,7 @@
         }
     </style>
 </head>
+
 <body>
     <div>
         <button id="start-btn">Empezar</button>
@@ -49,7 +52,7 @@
 
         if (annyang) {
             annyang.setLanguage('es-ES');
-            annyang.addCallback('result', function(phrases) {
+            annyang.addCallback('result', function (phrases) {
                 const recognizedText = phrases[0];
 
                 // Traducción usando Google Apps Script
@@ -70,4 +73,5 @@
         }
     </script>
 </body>
+
 </html>
