@@ -3,18 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reconocimiento y Traducción de Voz</title>
+    <title>Traducción de Voz</title>
+    <style>
+        body {
+            background-color: green;
+            color: yellow;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            font-size: 1.5em;
+            font-family: Arial, sans-serif;
+        }
+        #translated-text {
+            max-width: 80%;
+        }
+        #start-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <h1>Reconocimiento y Traducción de Voz</h1>
-    <button id="start-btn">Empezar</button>
-    <p id="recognized-text"></p>
-    <p id="translated-text"></p>
+    <div>
+        <button id="start-btn">Empezar</button>
+        <p id="translated-text"></p>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/annyang/2.6.1/annyang.min.js"></script>
     <script>
         const startBtn = document.getElementById('start-btn');
-        const recognizedTextElem = document.getElementById('recognized-text');
         const translatedTextElem = document.getElementById('translated-text');
         const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbylA5xEjSY8OR9zaU3rD0xC_AehY4Fp8un_6nLF5rBy_iwKzjIRBzyUSYpqERxyAurU/exec';
 
@@ -22,13 +44,12 @@
             annyang.setLanguage('es-ES');
             annyang.addCallback('result', function(phrases) {
                 const recognizedText = phrases[0];
-                recognizedTextElem.innerText = 'Texto reconocido: ' + recognizedText;
 
                 // Traducción usando Google Apps Script
                 fetch(`${appsScriptUrl}?text=${encodeURIComponent(recognizedText)}&source=es&target=pt`)
                     .then(response => response.text())
                     .then(translatedText => {
-                        translatedTextElem.innerText = 'Texto traducido: ' + translatedText;
+                        translatedTextElem.innerText = translatedText;
                     })
                     .catch(error => console.error('Error en la traducción:', error));
             });
