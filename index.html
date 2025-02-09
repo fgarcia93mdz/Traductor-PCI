@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,15 +18,15 @@
             font-size: 1.5em;
             font-family: Arial, sans-serif;
         }
-
         #translated-text {
             width: 80%;
             padding: 10px;
+            border: 2px solid black;
             margin-top: 20px;
             font-size: 1.2em;
             min-height: 50px;
+            box-sizing: border-box;
         }
-
         #start-btn {
             margin-top: 20px;
             padding: 10px 20px;
@@ -41,7 +40,6 @@
         }
     </style>
 </head>
-
 <body>
     <button id="start-btn">Iniciar Traducción</button>
     <p id="translated-text">Aquí aparecerá la traducción...</p>
@@ -73,8 +71,33 @@
                     }
                 }
 
-                // Muestra el texto en español mientras se detecta
                 translatedTextElem.innerText = interimTranscript ? `🗣 ${interimTranscript}` : "Procesando...";
 
-                // Traduce solo cuando hay un nuevo resultado final
-                if (finalTranscript.trim() && finalTranscript !== lastFin
+                if (finalTranscript.trim() && finalTranscript !== lastFinalText) {
+                    lastFinalText = finalTranscript;
+                    try {
+                        const response = await fetch(`${appsScriptUrl}?text=${encodeURIComponent(finalTranscript)}&source=es&target=pt`);
+                        const translatedText = await response.text();
+                        translatedTextElem.innerText = translatedText;
+                    } catch (error) {
+                        console.error('Error en la traducción:', error);
+                    }
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Error en el reconocimiento:', event.error);
+            };
+
+            recognition.onend = function() {
+                recognition.start();
+            };
+
+            startBtn.addEventListener('click', () => {
+                recognition.start();
+                startBtn.disabled = true;
+            });
+        }
+    </script>
+</body>
+</html>
