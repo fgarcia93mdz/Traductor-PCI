@@ -3,77 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prueba de Captura de Audio</title>
+    <title>Reconocimiento y Traducción de Voz</title>
 </head>
 <body>
-    <h2>Prueba de Captura de Audio</h2>
-    <p>Si ves la onda de sonido moverse, el audio está funcionando.</p>
-    <canvas id="oscilloscope" width="400" height="100" style="border:1px solid black;"></canvas>
+    <h1>Reconocimiento y Traducción de Voz</h1>
+    <button id="start-btn">Empezar</button>
+    <p id="recognized-text"></p>
+    <p id="translated-text"></p>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/annyang/2.6.1/annyang.min.js"></script>
     <script>
-        async function getAudioDevice() {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const audioInput = devices.find(device => device.kind === "audioinput" && device.label.includes("CABLE Output"));
-            return audioInput ? audioInput.deviceId : null;
+        const startBtn = document.getElementById('start-btn');
+        const recognizedTextElem = document.getElementById('recognized-text');
+        const translatedTextElem = document.getElementById('translated-text');
+        const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbylA5xEjSY8OR9zaU3rD0xC_AehY4Fp8un_6nLF5rBy_iwKzjIRBzyUSYpqERxyAurU/exec';
+
+        if (annyang) {
+            annyang.setLanguage('es-ES');
+            annyang.addCallback('result', function(phrases) {
+                const recognizedText = phrases[0];
+                recognizedTextElem.innerText = 'Texto reconocido: ' + recognizedText;
+
+                // Traducción usando Google Apps Script
+                fetch(`${appsScriptUrl}?text=${encodeURIComponent(recognizedText)}&source=es&target=pt`)
+                    .then(response => response.text())
+                    .then(translatedText => {
+                        translatedTextElem.innerText = 'Texto traducido: ' + translatedText;
+                    })
+                    .catch(error => console.error('Error en la traducción:', error));
+            });
+
+            startBtn.addEventListener('click', () => {
+                annyang.start();
+                startBtn.disabled = true;
+            });
+        } else {
+            alert('Reconocimiento de voz no es compatible con este navegador.');
         }
-
-        async function startAudioTest() {
-            const deviceId = await getAudioDevice();
-            if (!deviceId) {
-                console.error("No se encontró el dispositivo de entrada CABLE Output.");
-                alert("No se encontró el dispositivo de entrada CABLE Output.");
-                return;
-            }
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: { deviceId: deviceId },
-                    video: false
-                });
-
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const analyser = audioContext.createAnalyser();
-                const source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
-
-                const canvas = document.getElementById("oscilloscope");
-                const ctx = canvas.getContext("2d");
-                analyser.fftSize = 256;
-                const bufferLength = analyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-
-                function draw() {
-                    requestAnimationFrame(draw);
-                    analyser.getByteTimeDomainData(dataArray);
-                    ctx.fillStyle = "white";
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = "black";
-                    ctx.beginPath();
-
-                    let sliceWidth = canvas.width / bufferLength;
-                    let x = 0;
-                    for (let i = 0; i < bufferLength; i++) {
-                        let v = dataArray[i] / 128.0;
-                        let y = v * canvas.height / 2;
-                        if (i === 0) {
-                            ctx.moveTo(x, y);
-                        } else {
-                            ctx.lineTo(x, y);
-                        }
-                        x += sliceWidth;
-                    }
-                    ctx.lineTo(canvas.width, canvas.height / 2);
-                    ctx.stroke();
-                }
-
-                draw();
-            } catch (error) {
-                console.error("Error al capturar audio:", error);
-                alert("Error al capturar audio: " + error.message);
-            }
-        }
-
-        startAudioTest();
     </script>
 </body>
 </html>
